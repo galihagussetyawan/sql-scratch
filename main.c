@@ -3,10 +3,36 @@
 #include <strings.h>
 #include <ctype.h>
 
+char *read_input()
+{
+    char *str, c = '\0';
+    int i = 0;
+
+    str = malloc(sizeof(*str));
+
+    while (c != '\n')
+    {
+        c = fgetc(stdin);
+        realloc(str, (i + 1) * sizeof(*str));
+        str[i] = c;
+        i++;
+    }
+
+    str[i - 1] = '\0';
+    return str;
+}
+
+void close_input(char *input)
+{
+    input = NULL;
+    free(input);
+}
+
 void parse_meta_command(char *input)
 {
     if (strcmp(input, ".exit") == 0)
     {
+        close_input(input);
         exit(0);
     }
     else
@@ -39,27 +65,27 @@ void parse_statement(char *input)
 
 int main(int argc, char const *argv[])
 {
-    char input[128];
+    char *input;
 
     while (1)
     {
         printf("db > ");
-        fgets(input, (sizeof(input) - 1), stdin);
+        input = read_input();
 
-        if (*input == '\n')
+        if (strcmp(input, "") == 0)
         {
-            printf("'NULL' is not recognized. \n");
-        }
-
-        input[strlen(input) - 1] = '\0';
-
-        if (*input == '.')
-        {
-            parse_meta_command(input);
+            printf("'NULL' command is not recognized.\n");
         }
         else
         {
-            parse_statement(input);
+            if (*input == '.')
+            {
+                parse_meta_command(input);
+            }
+            else
+            {
+                parse_statement(input);
+            }
         }
     }
 
