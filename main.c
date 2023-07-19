@@ -24,8 +24,8 @@ char *read_input()
 
 void close_input(char *input)
 {
-    input = NULL;
     free(input);
+    input = NULL;
 }
 
 void parse_meta_command(char *input)
@@ -34,6 +34,10 @@ void parse_meta_command(char *input)
     {
         close_input(input);
         exit(0);
+    }
+    else if (strcmp(input, ".clear") == 0)
+    {
+        system("clear");
     }
     else
     {
