@@ -3,6 +3,8 @@
 #include <strings.h>
 #include <ctype.h>
 
+#define TABLE_MAX_PAGES 100
+
 typedef struct
 {
     int id;
@@ -12,8 +14,7 @@ typedef struct
 
 typedef struct
 {
-    char nama[32];
-    char **head;
+    int num_rows;
     row_t *rows;
 } table_t;
 
@@ -42,11 +43,56 @@ void close_input(char *input)
     input = NULL;
 }
 
-void parse_meta_command(char *input)
+void new_row(table_t *table)
+{
+    realloc(table->rows, (table->num_rows + 1) * sizeof(*table->rows));
+}
+
+void execute_insert(table_t *table, char *name, char *email)
+{
+    new_row(table);
+    if (table->num_rows == 0)
+    {
+        table->rows[table->num_rows + 1].id = 1;
+    }
+
+    table->rows[table->num_rows + 1].id = table->rows[table->num_rows].id + 1;
+    strcpy(table->rows[table->num_rows + 1].name, name);
+    strcpy(table->rows[table->num_rows + 1].email, email);
+    table->num_rows += 1;
+}
+
+void execute_select(table_t *table, int id)
+{
+    if (table->num_rows == 0)
+    {
+        printf("data kosong\n");
+    }
+    printf("%d ", &table->rows[id].id);
+    printf("%s ", table->rows[id].name);
+    printf("%s\n", table->rows[id].email);
+}
+
+table_t *init_table()
+{
+    table_t *table = (table_t *)malloc(sizeof(*table));
+    table->rows = (row_t *)malloc(sizeof(*table->rows));
+    table->num_rows = 0;
+    return table;
+}
+
+void free_table(table_t *table)
+{
+    free(table);
+    table = NULL;
+}
+
+void parse_meta_command(char *input, table_t *table)
 {
     if (strcmp(input, ".exit") == 0)
     {
         close_input(input);
+        free_table(table);
         exit(0);
     }
     else if (strcmp(input, ".clear") == 0)
@@ -65,19 +111,15 @@ void parse_statement(char *input, table_t *table)
 
     if (strncmp(input, "insert", 6) == 0)
     {
-        printf("Inserting ....\n");
-
-        // harcode insert rows
-        table->rows[1].id = 2;
-        strcpy(table->rows[1].name, "agusgalih");
-        strcpy(table->rows[1].email, "agus@gmail.com");
+        char name[32], email[32];
+        sscanf(input, "insert %s %s", &name, &email);
+        execute_insert(table, name, email);
     }
-    else if (strcmp(input, "select") == 0)
+    else if (strncmp(input, "select", 6) == 0)
     {
-        printf("selecting ...\n");
-
-        // hardcode select row
-        printf("%d %s %s\n", table->rows[1].id, table->rows[1].name, table->rows[1].email);
+        int id;
+        sscanf(input, "select %d", &id);
+        execute_select(table, id);
     }
     else if (strcmp(input, "delete") == 0)
     {
@@ -89,31 +131,10 @@ void parse_statement(char *input, table_t *table)
     }
 }
 
-table_t *init_table()
-{
-    table_t *table = (table_t *)malloc(sizeof(*table));
-    table->head = malloc(3 * sizeof(table->head));
-    table->head[0] = malloc(32 * sizeof(char));
-    table->head[1] = malloc(32 * sizeof(char));
-    table->head[2] = malloc(32 * sizeof(char));
-    strcpy(table->nama, "users");
-    strcpy(table->head[0], "id");
-    strcpy(table->head[1], "name");
-    strcpy(table->head[2], "email");
-
-    table->rows = (row_t *)malloc(3 * sizeof(*table->rows));
-    table->rows[0].id = 1;
-    strcpy(table->rows[0].name, "galihagus");
-    strcpy(table->rows[0].email, "galih@gmail.com");
-
-    return table;
-}
-
 int main(int argc, char const *argv[])
 {
     char *input;
     table_t *table = init_table();
-    printf("%d", sizeof(*table->rows) / sizeof(table->rows[0]));
 
     while (1)
     {
@@ -128,7 +149,7 @@ int main(int argc, char const *argv[])
         {
             if (*input == '.')
             {
-                parse_meta_command(input);
+                parse_meta_command(input, table);
             }
             else
             {
