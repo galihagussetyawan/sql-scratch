@@ -43,12 +43,19 @@ void close_input(char *input)
     input = NULL;
 }
 
+void serialize_row(row_t *dest, row_t *src)
+{
+    dest->id = src->id;
+    memcpy(dest->name, src->name, 32);
+    memcpy(dest->email, src->email, 32);
+}
+
 void new_row(table_t *table)
 {
     realloc(table->rows, (table->num_rows + 1) * sizeof(*table->rows));
 }
 
-void execute_insert(table_t *table, char *name, char *email)
+void execute_insert(table_t *table, row_t *row)
 {
     new_row(table);
     if (table->num_rows == 0)
@@ -56,9 +63,7 @@ void execute_insert(table_t *table, char *name, char *email)
         table->rows[table->num_rows + 1].id = 1;
     }
 
-    table->rows[table->num_rows + 1].id = table->rows[table->num_rows].id + 1;
-    strcpy(table->rows[table->num_rows + 1].name, name);
-    strcpy(table->rows[table->num_rows + 1].email, email);
+    serialize_row(&table->rows[table->num_rows + 1], row);
     table->num_rows += 1;
 }
 
@@ -111,9 +116,9 @@ void parse_statement(char *input, table_t *table)
 
     if (strncmp(input, "insert", 6) == 0)
     {
-        char name[32], email[32];
-        sscanf(input, "insert %s %s", &name, &email);
-        execute_insert(table, name, email);
+        row_t args;
+        sscanf(input, "insert %s %s", &args.name, &args.email);
+        execute_insert(table, &args);
     }
     else if (strncmp(input, "select", 6) == 0)
     {
