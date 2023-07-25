@@ -43,7 +43,7 @@ void close_input(char *input)
     input = NULL;
 }
 
-void serialize_row(row_t *dest, row_t *src)
+void add_row(row_t *dest, row_t *src)
 {
     dest->id = src->id;
     memcpy(dest->name, src->name, 32);
@@ -63,7 +63,7 @@ void execute_insert(table_t *table, row_t *row)
         table->rows[table->num_rows + 1].id = 1;
     }
 
-    serialize_row(&table->rows[table->num_rows + 1], row);
+    add_row(&table->rows[table->num_rows + 1], row);
     table->num_rows += 1;
 }
 
