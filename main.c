@@ -5,6 +5,8 @@
 
 #define TABLE_MAX_PAGES 100
 
+volatile int exit_code = 0;
+
 typedef struct
 {
     int id;
@@ -43,6 +45,18 @@ void close_input(char *input)
     input = NULL;
 }
 
+void serialize_table(table_t *table, FILE *file)
+{
+    fputs("users\n", file);
+    for (size_t i = 1; i < table->num_rows + 1; i++)
+    {
+        fseek(file, ftell(file), SEEK_SET);
+        fprintf(file, "%d|%s|%s\n", table->rows[i].id, table->rows[i].name, table->rows[i].email);
+    }
+    fseek(file, 0, SEEK_END);
+    fputs("EOF", file);
+}
+
 void add_row(row_t *dest, row_t *src)
 {
     dest->id = src->id;
@@ -60,9 +74,10 @@ void execute_insert(table_t *table, row_t *row)
     new_row(table);
     if (table->num_rows == 0)
     {
-        table->rows[table->num_rows + 1].id = 1;
+        row->id = 1;
     }
 
+    row->id = table->rows[table->num_rows].id + 1;
     add_row(&table->rows[table->num_rows + 1], row);
     table->num_rows += 1;
 }
@@ -92,13 +107,12 @@ void free_table(table_t *table)
     table = NULL;
 }
 
-void parse_meta_command(char *input, table_t *table)
+void parse_meta_command(char *input, table_t *table, FILE *file)
 {
     if (strcmp(input, ".exit") == 0)
     {
-        close_input(input);
-        free_table(table);
-        exit(0);
+        serialize_table(table, file);
+        exit_code = 1;
     }
     else if (strcmp(input, ".clear") == 0)
     {
@@ -138,10 +152,19 @@ void parse_statement(char *input, table_t *table)
 
 int main(int argc, char const *argv[])
 {
-    char *input;
-    table_t *table = init_table();
+    FILE *file;
+    fopen_s(&file, "data.dat", "w+");
+    if (!file)
+    {
+        perror("failed");
+        exit_code = 1;
+    }
 
-    while (1)
+    char *input = NULL;
+    table_t *table = NULL;
+    table = init_table();
+
+    while (!exit_code)
     {
         printf("db > ");
         input = read_input();
@@ -154,7 +177,7 @@ int main(int argc, char const *argv[])
         {
             if (*input == '.')
             {
-                parse_meta_command(input, table);
+                parse_meta_command(input, table, file);
             }
             else
             {
@@ -163,5 +186,8 @@ int main(int argc, char const *argv[])
         }
     }
 
+    close_input(input);
+    free_table(table);
+    fclose(file);
     return 0;
 }
