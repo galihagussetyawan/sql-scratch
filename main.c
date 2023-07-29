@@ -45,8 +45,16 @@ void close_input(char *input)
     input = NULL;
 }
 
-void serialize_table(table_t *table, FILE *file)
+void serialize_table(table_t *table)
 {
+    FILE *file;
+    fopen_s(&file, "data.dat", "w+");
+    if (!file)
+    {
+        perror("failed");
+        exit_code = 1;
+    }
+
     fputs("users\n", file);
     for (size_t i = 1; i < table->num_rows + 1; i++)
     {
@@ -55,6 +63,9 @@ void serialize_table(table_t *table, FILE *file)
     }
     fseek(file, 0, SEEK_END);
     fputs("EOF", file);
+
+    fclose(file);
+    free(file);
 }
 
 void add_row(row_t *dest, row_t *src)
@@ -111,11 +122,11 @@ void free_table(table_t *table)
     table = NULL;
 }
 
-void parse_meta_command(char *input, table_t *table, FILE *file)
+void parse_meta_command(char *input, table_t *table)
 {
     if (strcmp(input, ".exit") == 0)
     {
-        serialize_table(table, file);
+        serialize_table(table);
         exit_code = 1;
     }
     else if (strcmp(input, ".clear") == 0)
@@ -156,14 +167,6 @@ void parse_statement(char *input, table_t *table)
 
 int main(int argc, char const *argv[])
 {
-    FILE *file;
-    fopen_s(&file, "data.dat", "w+");
-    if (!file)
-    {
-        perror("failed");
-        exit_code = 1;
-    }
-
     char *input = NULL;
     table_t *table = NULL;
     table = init_table();
@@ -181,7 +184,7 @@ int main(int argc, char const *argv[])
         {
             if (*input == '.')
             {
-                parse_meta_command(input, table, file);
+                parse_meta_command(input, table);
             }
             else
             {
@@ -192,6 +195,5 @@ int main(int argc, char const *argv[])
 
     close_input(input);
     free_table(table);
-    fclose(file);
     return 0;
 }
