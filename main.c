@@ -66,19 +66,23 @@ void add_row(row_t *dest, row_t *src)
 
 void new_row(table_t *table)
 {
-    realloc(table->rows, (table->num_rows + 1) * sizeof(*table->rows));
+    realloc(table->rows, (table->num_rows + 1) * sizeof(row_t));
 }
 
 void execute_insert(table_t *table, row_t *row)
 {
-    new_row(table);
     if (table->num_rows == 0)
     {
         row->id = 1;
+        add_row(&table->rows[table->num_rows], row);
+    }
+    else
+    {
+        new_row(table);
+        row->id = table->rows[table->num_rows].id + 1;
+        add_row(&table->rows[table->num_rows + 1], row);
     }
 
-    row->id = table->rows[table->num_rows].id + 1;
-    add_row(&table->rows[table->num_rows + 1], row);
     table->num_rows += 1;
 }
 
@@ -95,8 +99,8 @@ void execute_select(table_t *table, int id)
 
 table_t *init_table()
 {
-    table_t *table = (table_t *)malloc(sizeof(*table));
-    table->rows = (row_t *)malloc(sizeof(*table->rows));
+    table_t *table = (table_t *)malloc(sizeof(table_t));
+    table->rows = (row_t *)malloc(sizeof(row_t));
     table->num_rows = 0;
     return table;
 }
