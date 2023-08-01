@@ -82,14 +82,14 @@ void new_row(table_t *table)
 
 void execute_insert(table_t *table, row_t *row)
 {
+    new_row(table);
     if (table->num_rows == 0)
     {
         row->id = 1;
-        add_row(&table->rows[table->num_rows], row);
+        add_row(&table->rows[1], row);
     }
     else
     {
-        new_row(table);
         row->id = table->rows[table->num_rows].id + 1;
         add_row(&table->rows[table->num_rows + 1], row);
     }
@@ -111,7 +111,7 @@ void execute_select(table_t *table, int id)
 table_t *init_table()
 {
     table_t *table = (table_t *)malloc(sizeof(table_t));
-    table->rows = (row_t *)malloc(sizeof(row_t));
+    table->rows = (row_t *)malloc(table->num_rows * sizeof(row_t));
     table->num_rows = 0;
     return table;
 }
