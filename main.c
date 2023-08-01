@@ -3,8 +3,6 @@
 #include <strings.h>
 #include <ctype.h>
 
-#define TABLE_MAX_PAGES 100
-
 volatile int exit_code = 0;
 
 typedef struct
@@ -45,6 +43,18 @@ void close_input(char *input)
     input = NULL;
 }
 
+void add_row(row_t *dest, row_t *src)
+{
+    dest->id = src->id;
+    memcpy(dest->name, src->name, 32);
+    memcpy(dest->email, src->email, 32);
+}
+
+void new_row(table_t *table)
+{
+    realloc(table->rows, (table->num_rows + 1) * sizeof(row_t));
+}
+
 void serialize_table(table_t *table)
 {
     FILE *file;
@@ -59,7 +69,7 @@ void serialize_table(table_t *table)
     for (size_t i = 1; i < table->num_rows + 1; i++)
     {
         fseek(file, ftell(file), SEEK_SET);
-        fprintf(file, "%d|%s|%s\n", table->rows[i].id, table->rows[i].name, table->rows[i].email);
+        fprintf(file, "%d | %s | %s\n", table->rows[i].id, table->rows[i].name, table->rows[i].email);
     }
     fseek(file, 0, SEEK_END);
     fputs("EOF", file);
@@ -68,16 +78,41 @@ void serialize_table(table_t *table)
     free(file);
 }
 
-void add_row(row_t *dest, row_t *src)
+void deserialize_table(table_t *table)
 {
-    dest->id = src->id;
-    memcpy(dest->name, src->name, 32);
-    memcpy(dest->email, src->email, 32);
-}
+    FILE *file;
+    fopen_s(&file, "data.dat", "r");
+    if (!file)
+    {
+        perror("failed");
+        exit_code = 1;
+    }
 
-void new_row(table_t *table)
-{
-    realloc(table->rows, (table->num_rows + 1) * sizeof(row_t));
+    char line[1024];
+    int i = 1, i_row = 1;
+
+    while (fgets(line, sizeof(line), file))
+    {
+        if (strcmp(line, "EOF") == 0)
+        {
+            break;
+        }
+
+        if (i != 1)
+        {
+            row_t args;
+            sscanf(line, "%i | %s | %s", &args.id, &args.name, &args.email);
+
+            new_row(table);
+            add_row(&table->rows[i_row], &args);
+            table->num_rows = i_row;
+            i_row++;
+        }
+
+        i++;
+    }
+
+    fclose(file);
 }
 
 void execute_insert(table_t *table, row_t *row)
@@ -103,7 +138,7 @@ void execute_select(table_t *table, int id)
     {
         printf("data kosong\n");
     }
-    printf("%d ", &table->rows[id].id);
+    printf("%d ", table->rows[id].id);
     printf("%s ", table->rows[id].name);
     printf("%s\n", table->rows[id].email);
 }
@@ -165,11 +200,17 @@ void parse_statement(char *input, table_t *table)
     }
 }
 
+table_t *load_table()
+{
+    table_t *table = init_table();
+    deserialize_table(table);
+    return table;
+}
+
 int main(int argc, char const *argv[])
 {
-    char *input = NULL;
-    table_t *table = NULL;
-    table = init_table();
+    char *input;
+    table_t *table = load_table();
 
     while (!exit_code)
     {
