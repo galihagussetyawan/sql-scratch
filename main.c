@@ -152,17 +152,23 @@ void execute_select(table_t *table, int idx)
 
 void execute_delete(table_t *table, int idx)
 {
-    if (idx > table->num_rows)
+    if (table->num_rows == 0)
+    {
+        printf("data is empty\n");
+    }
+    else if (idx > table->num_rows)
     {
         printf("index out bound\n");
     }
-
-    for (int i = idx; i < table->num_rows; i++)
+    else
     {
-        table->rows[i] = table->rows[i + 1];
+        for (int i = idx; i < table->num_rows; i++)
+        {
+            table->rows[i] = table->rows[i + 1];
+        }
+        table->num_rows--;
+        realloc(table->rows, table->num_rows * sizeof(row_t));
     }
-    table->num_rows--;
-    realloc(table->rows, table->num_rows * sizeof(row_t));
 }
 
 table_t *init_table()
