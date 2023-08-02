@@ -132,15 +132,22 @@ void execute_insert(table_t *table, row_t *row)
     table->num_rows += 1;
 }
 
-void execute_select(table_t *table, int id)
+void execute_select(table_t *table, int idx)
 {
     if (table->num_rows == 0)
     {
-        printf("data kosong\n");
+        printf("data is empty\n");
     }
-    printf("%d ", table->rows[id].id);
-    printf("%s ", table->rows[id].name);
-    printf("%s\n", table->rows[id].email);
+    else if (idx > table->num_rows)
+    {
+        printf("index out bound\n");
+    }
+    else
+    {
+        printf("%d ", table->rows[idx].id);
+        printf("%s ", table->rows[idx].name);
+        printf("%s\n", table->rows[idx].email);
+    }
 }
 
 void execute_delete(table_t *table, int idx)
@@ -201,9 +208,9 @@ void parse_statement(char *input, table_t *table)
     }
     else if (strncmp(input, "select", 6) == 0)
     {
-        int id;
-        sscanf(input, "select %d", &id);
-        execute_select(table, id);
+        int idx;
+        sscanf(input, "select %d", &idx);
+        execute_select(table, idx);
     }
     else if (strncmp(input, "delete", 6) == 0)
     {
