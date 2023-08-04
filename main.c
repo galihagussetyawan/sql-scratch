@@ -55,6 +55,19 @@ void new_row(table_t *table)
     realloc(table->rows, (table->num_rows + 1) * sizeof(row_t));
 }
 
+void replace(char *str, char find, char change)
+{
+    int i = 0;
+    while (str[i] != '\0')
+    {
+        if (str[i] == find)
+        {
+            str[i] = change;
+        }
+        i++;
+    }
+}
+
 void serialize_table(table_t *table)
 {
     FILE *file;
@@ -69,7 +82,7 @@ void serialize_table(table_t *table)
     for (size_t i = 1; i < table->num_rows + 1; i++)
     {
         fseek(file, ftell(file), SEEK_SET);
-        fprintf(file, "%d | %s | %s\n", table->rows[i].id, table->rows[i].name, table->rows[i].email);
+        fprintf(file, "%d|%s|%s\n", table->rows[i].id, table->rows[i].name, table->rows[i].email);
     }
     fseek(file, 0, SEEK_END);
     fputs("EOF", file);
@@ -101,7 +114,9 @@ void deserialize_table(table_t *table)
         if (i != 1)
         {
             row_t args;
-            sscanf(line, "%i | %s | %s", &args.id, &args.name, &args.email);
+
+            replace(line, '|', ' ');
+            sscanf(line, "%i %s %s", &args.id, &args.name, &args.email);
 
             new_row(table);
             add_row(&table->rows[i_row], &args);
